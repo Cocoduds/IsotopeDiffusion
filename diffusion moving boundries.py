@@ -56,6 +56,7 @@ for i in range (1,int((xmax-xmin)/h)):
     D[i,:] = 0.01
 
 x = np.linspace(int(xmin),int(xmax),int((xmax-xmin)/h))
+xinit = np.linspace(int(xmin),int(xmax),int((xmax-xmin)/h))
 print('x=',x)
 plt.figure(1)
 u = initial_left(x)
@@ -91,24 +92,25 @@ times=[]
 #     #     xmax = xmax + h
 #     #     x = np.append(x,xmax+h)
     
-for i in range (0,1000):
+for i in range (0,100000):
     u = RK4(u, dt, h, D)
     u = periodicRK4(u, dt, h, D)
     maxes.append(np.max(u))
     times.append(i*dt)
     u[:,0] = 100
-    if i%5 == 0:
+    if i%50 == 0:
         fig = plt.figure()
         ax = plt.axes(projection='3d')
-        ax.contour3D(x, x, u, 50, cmap='coolwarm')
+        ax.contour3D(x, xinit, u, 50, cmap='coolwarm')
         ax.set_xlabel('x')
         ax.set_ylabel('y')
         ax.set_zlabel('z')
-        ax.set_title('3D contour')
+        ax.set_title('t='+ str(i))
         plt.show()
-    # if u[len(u)-1] > 30:
-    #     u = np.append(u,0)
-    #     xmax = xmax + h
-    #     x = np.append(x,xmax+h)
+    if np.sum(u[:,len(u[:,0])-1]) > 5:
+        u = np.c_[u,np.zeros(len(u[:,0]))]
+        xmax = xmax + h
+        x = np.append(x,xmax+h)
+        D = np.c_[D,[1,0.01,0.01,0.01,0.01,0.01,0.01,0.01,0.01,0.01]]
 
         
