@@ -66,11 +66,11 @@ def mirrorRK4(x, dt, dx, D):
 
 #EULER METHODS
 
-def euler(yn, stepsize, t, h):
-    return(yn + (stepsize * diffusion(t, yn, h)))
+def euler(x, dt, dx, D):
+    return(x + (dt * diffusion(x, dx, D)))
 
 def mirroreuler(x, dt, dx, D):
-    return(x + (dx * mirrordiffusion(x, dx,)))
+    return(x + (dt * mirrordiffusion(x, dx, D)))
 
 def periodiceuler(yn, stepsize, t, h):
     return(yn + (stepsize * periodicdiffusion(t, yn, h)))
@@ -142,8 +142,8 @@ plt.show()
 #%%This loop is for 3D
 for i in range (0,100000):
     u[:,0] = 100
-    u = RK4(u, dt, h, D)
-    u = mirrorRK4(u, dt, h, D)
+    u = euler(u, dt, h, D)
+    u = mirroreuler(u, dt, h, D)
     
     # if i%50 == 0: THIS IS FOR A 3D PLOT
     #     fig = plt.figure()
@@ -156,15 +156,19 @@ for i in range (0,100000):
     #     plt.show()
     
     if i%5000 == 0: #2D projections
-        plt.plot(x, u[0,:])
+        plt.plot(x, u[0,:], label = 'Grain boundry')
+        plt.plot(x, u[int((ymax-ymin)/h)-1,:], label = 'Middle of bulk')
+        plt.legend()
+        plt.xlabel('Oxygen ----> Aluminum')
+        plt.ylabel('02 Concentration')
+        plt.title(str(i)+' time steps')
         plt.show()
         
     
-    
-    if np.sum(u[:,len(u[0,:])-1]) > 30: #Moving boundry
+    if np.sum(u[:,len(u[0,:])-1]) > 400: #Moving boundry
         u = np.c_[u,np.zeros(len(u[:,0]))]
         xmax = xmax + h
         x = np.append(x,xmax+h)
-        D = np.c_[D,[1,0.01,0.01,0.01,0.01]]
+        D = np.c_[D,[1,0.01,0.01,0.01,0.01]] #THIS IS STILL HARDCODED
 
         
