@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 """
 Created on Thu Feb  9 11:29:59 2023
-
 @author: Colton and Nikhil
 """
 # =============================================================================
@@ -18,8 +17,10 @@ import matplotlib.pyplot as plt
 def diffusion(x, h, D): #diffusion in x direction
     uiPlus1 = np.copy(x)
     uiMinus1 = np.copy(x)
+    metalBoundryTotal = np.sum(u[:,len(u[0,:])-1]) #addition of concentrations at metal boundry
     for i in range(len(x[:,0])):
-        uiPlus1[i,:] = np.append(x[i,1:],x[i,len(x[0,:])-1])
+        #uiPlus1[i,:] = np.append(x[i,1:],x[i,len(x[0,:])-1]) # THIS IS FOR NO DIFFUSION INTO METAL
+        uiPlus1[i,:] = np.append(x[i,1:],metalBoundryTotal/len(x[:,0])) #this boundry condiditon is eq. 23 (unweighted average atm)
         uiMinus1[i,:] = np.append(100,x[i,:-1])
     return (np.multiply(D,(uiPlus1 + -2*x + uiMinus1) / h**2))
 
@@ -38,7 +39,6 @@ def mirrordiffusion(x, h, D): #for y direction half boundry
         uiPlus1[:,i] = np.append(x[1:,i],x[len(x[:,0])-1,i])
         uiMinus1[:,i] = np.append(x[0,i],x[:-1,i])
     return (np.multiply(D,(uiPlus1 + -2*x + uiMinus1) / h**2))
-
 
 
 #%% RUNGE KUTTA METHODS
@@ -74,31 +74,36 @@ def mirroreuler(x, dt, dx, D):
 
 def periodiceuler(yn, stepsize, t, h):
     return(yn + (stepsize * periodicdiffusion(t, yn, h)))
+    
 
+#%% EXTRA BOUNDRY CONDITIONS
+def metalBoundry(x, D, i):
+    return
 
 #%% Initializing
 
 def initial_left(x): #unsaturated oxygen
-    stemp = (int((ymax-ymin)/h),int((xmax-xmin)/h))
+    stemp = (int((ymax-ymin)/dx),int((xmax-xmin)/dx))
     y = np.zeros(stemp)
     return(y)
 
 #Setting step size
 
-h=0.1 #SPATIAL STEP SIZE
+dx=0.1 #SPATIAL STEP SIZE
+dy=0.1 #the program runs on a square grid everything is set to dh. this will need to be changed to change the step size in grain boundry
 xmin=0 
 xmax=1 #INITIAL RANGE BETWEEN OXYGEN AND ALLUMINIUM
 ymin=0
 ymax=0.5 #DISTANCE IN BULK DIRECTION
 dt=0.001 #TEMPORAL STEP SIZE
 
-s=(int((ymax-ymin)/h),int((xmax-xmin)/h)) #number of nodes (used in defining D matrix)
-x = np.linspace(int(xmin),int(xmax),int((xmax-xmin)/h)) #this just defines the axis for plots
-y = np.linspace(int(xmin),int(xmax),int((xmax-xmin)/h)) #this is only used in 3d plotting
+s=(int((ymax-ymin)/dx),int((xmax-xmin)/dx)) #number of nodes (used in defining D matrix)
+x = np.linspace(int(xmin),int(xmax),int((xmax-xmin)/dx)) #this just defines the axis for plots
+y = np.linspace(int(xmin),int(xmax),int((xmax-xmin)/dx)) #this is only used in 3d plotting
 
 # MATRIX OF DIFFUSION COEFICIENTS
 D = np.ones(s)
-for i in range (1,int((ymax-ymin)/h)):
+for i in range (1,int((ymax-ymin)/dx)):
     D[i,:] = 0.01
 
 #Setting the starting conditions
@@ -115,8 +120,8 @@ plt.show()
 
 #%% THIS LOOP IS FOR 1D only
 # for i in range (0, 20000000):
-#     u = RK4(u, dt, h, D, 1)
-#     # v = RK4(v, dt, h, D/2, 2)
+#     u = RK4(u, dt, dx, D, 1)
+#     # v = RK4(v, dt, dx, D/2, 2)
 #     maxes.append(np.max(u))
 #     times.append(i*dt)
 #     if i%500 == 0:
@@ -131,19 +136,19 @@ plt.show()
 #         u = np.append(u,0)
 #         # v = np.append(0,v)
 #         xmax = xmax + h
-#         x = np.append(x,xmax+h)
+#         x = np.append(x,xmax+dx)
 #     # if v[0] > 25:
 #     #     u = np.append(u,0)
 #     #     v = np.append(0,v)
-#     #     xmax = xmax + h
-#     #     x = np.append(x,xmax+h)
+#     #     xmax = xmax + dx
+#     #     x = np.append(x,xmax+dx)
     
 
 #%%This loop is for 3D
-for i in range (0,100000):
+for i in range (0,10000):
     u[:,0] = 100
-    u = RK4(u, dt, h, D)
-    u = mirrorRK4(u, dt, h, D)
+    u = RK4(u, dt, dx, D)
+    u = mirrorRK4(u, dt, dx, D)
     
     # if i%50 == 0: THIS IS FOR A 3D PLOT
     #     fig = plt.figure()
@@ -163,8 +168,6 @@ for i in range (0,100000):
     
     if np.sum(u[:,len(u[0,:])-1]) > 30: #Moving boundry
         u = np.c_[u,np.zeros(len(u[:,0]))]
-        xmax = xmax + h
-        x = np.append(x,xmax+h)
+        xmax = xmax + dx
+        x = np.append(x,xmax+dx)
         D = np.c_[D,[1,0.01,0.01,0.01,0.01]]
-
-        
