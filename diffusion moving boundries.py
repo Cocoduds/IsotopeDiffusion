@@ -67,10 +67,10 @@ def mirrorRK4(x, dt, dx, D):
 #EULER METHODS
 
 def euler(x, dt, dx, D):
-    return(x + (dt * diffusion(x, dx, D)))
+    return((dt * diffusion(x, dx, D)))
 
 def mirroreuler(x, dt, dx, D):
-    return(x + (dt * mirrordiffusion(x, dx, D)))
+    return((dt * mirrordiffusion(x, dx, D)))
 
 def periodiceuler(yn, stepsize, t, h):
     return(yn + (stepsize * periodicdiffusion(t, yn, h)))
@@ -80,8 +80,8 @@ def periodiceuler(yn, stepsize, t, h):
 
 def initial_left(x): #unsaturated oxygen
     stemp = (int((ymax-ymin)/h),int((xmax-xmin)/h))
-    y = np.zeros(stemp)
-    return(y)
+    ytemp = np.zeros(stemp)
+    return(ytemp)
 
 #Setting step size
 
@@ -94,7 +94,7 @@ dt=0.001 #TEMPORAL STEP SIZE
 
 s=(int((ymax-ymin)/h),int((xmax-xmin)/h)) #number of nodes (used in defining D matrix)
 x = np.linspace(int(xmin),int(xmax),int((xmax-xmin)/h)) #this just defines the axis for plots
-y = np.linspace(int(xmin),int(xmax),int((xmax-xmin)/h)) #this is only used in 3d plotting
+y = np.linspace(int(ymin),int(ymax),int((ymax-ymin)/h)) #this is only used in 3d plotting
 
 # MATRIX OF DIFFUSION COEFICIENTS
 D = np.ones(s)
@@ -142,8 +142,7 @@ plt.show()
 #%%This loop is for 3D
 for i in range (0,100000):
     u[:,0] = 100
-    u = euler(u, dt, h, D)
-    u = mirroreuler(u, dt, h, D)
+    u = u + RK4(u, dt, h, D) + mirrorRK4(u, dt, h, D)
     
     # if i%50 == 0: THIS IS FOR A 3D PLOT
     #     fig = plt.figure()
@@ -155,20 +154,29 @@ for i in range (0,100000):
     #     ax.set_title('t='+ str(i))
     #     plt.show()
     
-    if i%5000 == 0: #2D projections
+    if i%500 == 0: #2D projections
         plt.plot(x, u[0,:], label = 'Grain boundry')
         plt.plot(x, u[int((ymax-ymin)/h)-1,:], label = 'Middle of bulk')
         plt.legend()
         plt.xlabel('Oxygen ----> Aluminum')
         plt.ylabel('02 Concentration')
         plt.title(str(i)+' time steps')
+        plt.ylim(0,100)
+        plt.xlim(0,1.5)
         plt.show()
+        # plt.plot([1,2,3,4,5],u[:,1])
+        # plt.plot([1,2,3,4,5],u[:,2])
+        # plt.plot([1,2,3,4,5],u[:,3])
+        # plt.plot([1,2,3,4,5],u[:,4])
+        # plt.plot([1,2,3,4,5],u[:,0])
+        # plt.show()
         
     
-    if np.sum(u[:,len(u[0,:])-1]) > 400: #Moving boundry
+    if np.sum(u[:,len(u[0,:])-1]) > 400: #MOVING BOUNDRY
         u = np.c_[u,np.zeros(len(u[:,0]))]
-        xmax = xmax + h
-        x = np.append(x,xmax+h)
+        xmax = xmax + h #the added step could vary graphically from initial step
+        x = np.append(x,xmax)
         D = np.c_[D,[1,0.01,0.01,0.01,0.01]] #THIS IS STILL HARDCODED
+        print(u)
 
         
