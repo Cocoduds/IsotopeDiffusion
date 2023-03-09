@@ -48,21 +48,21 @@ def RK4(x, dt, dx, D):
     fb = diffusion(x + fa*dt/2, dx, D)
     fc = diffusion(x + fb*dt/2, dx, D)
     fd = diffusion(x + fc*dt, dx, D)
-    return x + 1/6 *(fa + 2*fb + 2*fc + fd) * dt
+    return 1/6 *(fa + 2*fb + 2*fc + fd) * dt
 
 def periodicRK4(x, dt, dx, D):
     fa = periodicdiffusion(x, dx, D)
     fb = periodicdiffusion(x + fa*dt/2, dx, D)
     fc = periodicdiffusion(x + fb*dt/2, dx, D)
     fd = periodicdiffusion(x + fc*dt, dx, D)
-    return x + 1/6 *(fa + 2*fb + 2*fc + fd) * dt
+    return 1/6 *(fa + 2*fb + 2*fc + fd) * dt
 
 def mirrorRK4(x, dt, dx, D):
     fa = mirrordiffusion(x, dx, D)
     fb = mirrordiffusion(x + fa*dt/2, dx, D)
     fc = mirrordiffusion(x + fb*dt/2, dx, D)
     fd = mirrordiffusion(x + fc*dt, dx, D)
-    return x + 1/6 *(fa + 2*fb + 2*fc + fd) * dt
+    return 1/6 *(fa + 2*fb + 2*fc + fd) * dt
 
 #EULER METHODS
 
@@ -83,7 +83,7 @@ def metalBoundry(x, D, i):
 #%% Initializing
 
 def initial_left(x): #unsaturated oxygen
-    stemp = (int((ymax-ymin)/dx),int((xmax-xmin)/dx))
+    stemp = (int((ymax-ymin)/dx)+1,int((xmax-xmin)/dx)+1)
     y = np.zeros(stemp)
     return(y)
 
@@ -97,13 +97,13 @@ ymin=0
 ymax=0.5 #DISTANCE IN BULK DIRECTION
 dt=0.001 #TEMPORAL STEP SIZE
 
-s=(int((ymax-ymin)/dx),int((xmax-xmin)/dx)) #number of nodes (used in defining D matrix)
-x = np.linspace(int(xmin),int(xmax),int((xmax-xmin)/dx)) #this just defines the axis for plots
-y = np.linspace(int(xmin),int(xmax),int((xmax-xmin)/dx)) #this is only used in 3d plotting
+s=(int((ymax-ymin)/dx)+1,int((xmax-xmin)/dx)+1) #number of nodes (used in defining D matrix)
+x = np.linspace(int(xmin),int(xmax),int((xmax-xmin)/dx)+1) #this just defines the axis for plots
+y = np.linspace(int(xmin),int(xmax),int((xmax-xmin)/dx)+1) #this is only used in 3d plotting
 
 # MATRIX OF DIFFUSION COEFICIENTS
 D = np.ones(s)
-for i in range (1,int((ymax-ymin)/dx)):
+for i in range (1,int((ymax-ymin)/dx)+1):
     D[i,:] = 0.01
 
 #Setting the starting conditions
@@ -145,10 +145,9 @@ plt.show()
     
 
 #%%This loop is for 3D
-for i in range (0,10000):
+for i in range (0,1000000):
+    u = u + RK4(u, dt, dx, D) + mirrorRK4(u, dt, dx, D)
     u[:,0] = 100
-    u = RK4(u, dt, dx, D)
-    u = mirrorRK4(u, dt, dx, D)
     
     # if i%50 == 0: THIS IS FOR A 3D PLOT
     #     fig = plt.figure()
@@ -159,15 +158,19 @@ for i in range (0,10000):
     #     ax.set_zlabel('z')
     #     ax.set_title('t='+ str(i))
     #     plt.show()
-    
-    if i%5000 == 0: #2D projections
-        plt.plot(x, u[0,:])
-        plt.show()
         
-    
+    if i%5000 == 0: #2D projections
+        plt.plot(x, u[0,:], label = 'gb')
+        plt.plot(x,u[4,:], label = 'middle of bulk')
+        plt.xlabel('concentration')
+        plt.axvline(x = 0, color = 'b')
+        plt.axvline(x = xmax, color = 'b')
+        plt.legend()
+        plt.show()
     
     if np.sum(u[:,len(u[0,:])-1]) > 30: #Moving boundry
         u = np.c_[u,np.zeros(len(u[:,0]))]
         xmax = xmax + dx
-        x = np.append(x,xmax+dx)
-        D = np.c_[D,[1,0.01,0.01,0.01,0.01]]
+        x = np.append(x,xmax)
+        D = np.c_[D,[1,0.01,0.01,0.01,0.01,0.01]]
+        
