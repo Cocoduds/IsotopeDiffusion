@@ -19,7 +19,12 @@ def diffusion(x, h, D): #diffusion in x direction
     uiPlus1 = np.copy(x)
     uiMinus1 = np.copy(x)
     for i in range(len(x[:,0])):
+<<<<<<< Updated upstream
         uiPlus1[i,:] = np.append(x[i,1:],x[i,len(x[0,:])-1])
+=======
+        uiPlus1[i,:] = np.append(x[i,1:],x[i,len(x[0,:])-1]) # THIS IS FOR NO DIFFUSION INTO METAL
+        #uiPlus1[i,:] = np.append(x[i,1:],metalBoundryTotal/len(x[:,0])) #this boundry condiditon is eq. 23 (unweighted average atm)
+>>>>>>> Stashed changes
         uiMinus1[i,:] = np.append(100,x[i,:-1])
     return (np.multiply(D,(uiPlus1 + -2*x + uiMinus1) / h**2))
 
@@ -40,6 +45,44 @@ def mirrordiffusion(x, h, D): #for y direction half boundry
     return (np.multiply(D,(uiPlus1 + -2*x + uiMinus1) / h**2))
 
 
+<<<<<<< Updated upstream
+=======
+def isotopeDiffusion(x, co, h, Do, L, fl, Omega, cop):
+    uiPlus1 = np.copy(x)
+    uiMinus1 = np.copy(x)
+    coPlus1 = np.copy(co)
+    coMinus1 = np.copy(co)
+    metalBoundryTotal = np.sum(u[:,len(u[0,:])-1]) #addition of concentrations at metal boundry
+    for i in range(len(x[:,0])):
+        #uiPlus1[i,:] = np.append(x[i,1:],x[i,len(x[0,:])-1]) # THIS IS FOR NO DIFFUSION INTO METAL
+        uiPlus1[i,:] = np.append(x[i,1:],metalBoundryTotal/len(x[:,0])) #this boundry condiditon is eq. 23 (unweighted average atm)
+        uiMinus1[i,:] = np.append(100,x[i,:-1])
+        coPlus1[i,:] = np.append(co[i,1:],metalBoundryTotal/len(co[:,0])) 
+        coMinus1[i,:] = np.append(100,co[i,:-1])
+        
+    return (np.multiply(Do,(uiPlus1 + -2*x + uiMinus1) / h**2)) 
+    - ((1/cop)*np.multiply(co,(np.multiply(Do,(uiPlus1 + -2*x + uiMinus1) / h**2))))
+    - ((1/cop))*(np.multiply(Do,(uiPlus1 - uiMinus1) / 2*h))
+    - ((3*fl)/(Omega*L))*np.devide((np.multiply(Do,(uiPlus1 - uiMinus1) / 2*h)),co)
+    
+def mirrorIsoptopeDiffusion(x, co, h, Do, L, fl, Omega, cop):
+    uiPlus1 = np.copy(x)
+    uiMinus1 = np.copy(x)
+    coPlus1 = np.copy(co)
+    coMinus1 = np.copy(co)
+    metalBoundryTotal = np.sum(u[:,len(u[0,:])-1]) #addition of concentrations at metal boundry
+    for i in range(len(x[:,0])):
+        #uiPlus1[i,:] = np.append(x[i,1:],x[i,len(x[0,:])-1]) # THIS IS FOR NO DIFFUSION INTO METAL
+        uiPlus1[i,:] = np.append(x[i,1:],metalBoundryTotal/len(x[:,0])) #this boundry condiditon is eq. 23 (unweighted average atm)
+        uiMinus1[i,:] = np.append(100,x[i,:-1])
+        coPlus1[i,:] = np.append(co[i,1:],metalBoundryTotal/len(co[:,0])) 
+        coMinus1[i,:] = np.append(100,co[i,:-1])
+        
+    return (np.multiply(Do,(uiPlus1 + -2*x + uiMinus1) / h**2)) 
+    - ((1/cop)*np.multiply(co,(np.multiply(Do,(uiPlus1 + -2*x + uiMinus1) / h**2))))
+    - ((1/cop))*(np.multiply(Do,(uiPlus1 - uiMinus1) / 2*h))
+    - ((3*fl)/(Omega*L))*np.devide((np.multiply(Do,(uiPlus1 - uiMinus1) / 2*h)),co)
+>>>>>>> Stashed changes
 
 #%% RUNGE KUTTA METHODS
 
@@ -64,6 +107,15 @@ def mirrorRK4(x, dt, dx, D):
     fd = mirrordiffusion(x + fc*dt, dx, D)
     return x + 1/6 *(fa + 2*fb + 2*fc + fd) * dt
 
+
+
+def isotopeRK4(x, co, h, Do, L, fl, Omega, cop, dt):
+    fa = isotopeDiffusion(x, co, h, Do, L, fl, Omega, cop)
+    fb = isotopeDiffusion(x + fa*dt/2, co, h, Do, L, fl, Omega, cop)
+    fc = isotopeDiffusion(x + fb*dt/2, co, h, Do, L, fl, Omega, cop)
+    fd = isotopeDiffusion(x + fc*dt, co, h, Do, L, fl, Omega, cop)
+    return 1/6 *(fa + 2*fb + 2*fc + fd) * dt
+
 #EULER METHODS
 
 def euler(x, dt, dx, D):
@@ -83,6 +135,11 @@ def initial_left(x): #unsaturated oxygen
     ytemp = np.zeros(stemp)
     return(ytemp)
 
+def initalOxygen(x):
+    stemp = (int((ymax-ymin)/dx)+1,int((xmax-xmin)/dx)+1)
+    y = np.ones(stemp)
+    return(y*99)
+
 #Setting step size
 
 h=0.1 #SPATIAL STEP SIZE
@@ -92,9 +149,20 @@ ymin=0
 ymax=0.5 #DISTANCE IN BULK DIRECTION
 dt=0.001 #TEMPORAL STEP SIZE
 
+<<<<<<< Updated upstream
 s=(int((ymax-ymin)/h),int((xmax-xmin)/h)) #number of nodes (used in defining D matrix)
 x = np.linspace(int(xmin),int(xmax),int((xmax-xmin)/h)) #this just defines the axis for plots
 y = np.linspace(int(ymin),int(ymax),int((ymax-ymin)/h)) #this is only used in 3d plotting
+=======
+cop=1
+L=1
+fl=1
+Omega=1
+
+s=(int((ymax-ymin)/dx)+1,int((xmax-xmin)/dx)+1) #number of nodes (used in defining D matrix)
+x = np.linspace(int(xmin),int(xmax),int((xmax-xmin)/dx)+1) #this just defines the axis for plots
+y = np.linspace(int(xmin),int(xmax),int((xmax-xmin)/dx)+1) #this is only used in 3d plotting
+>>>>>>> Stashed changes
 
 # MATRIX OF DIFFUSION COEFICIENTS
 D = np.ones(s)
@@ -103,6 +171,8 @@ for i in range (1,int((ymax-ymin)/h)):
 
 #Setting the starting conditions
 u = initial_left(x)
+o18 = initial_left(x)
+oTotal = initalOxygen(x)
 #v = initial_right(x)
 
 
@@ -140,9 +210,17 @@ plt.show()
     
 
 #%%This loop is for 3D
+<<<<<<< Updated upstream
 for i in range (0,100000):
     u[:,0] = 100
     u = u + RK4(u, dt, h, D) + mirrorRK4(u, dt, h, D)
+=======
+for i in range (0,200):
+    oTotal = oTotal + RK4(oTotal, dt, dx, D)
+    o18 = o18 + isotopeRK4(o18, oTotal, dx, D, L, fl, Omega, cop, dt)
+    oTotal[:,0] = 100
+    o18[:,0] = 100
+>>>>>>> Stashed changes
     
     # if i%50 == 0: THIS IS FOR A 3D PLOT
     #     fig = plt.figure()
@@ -153,6 +231,7 @@ for i in range (0,100000):
     #     ax.set_zlabel('z')
     #     ax.set_title('t='+ str(i))
     #     plt.show()
+<<<<<<< Updated upstream
     
     if i%500 == 0: #2D projections
         plt.plot(x, u[0,:], label = 'Grain boundry')
@@ -170,6 +249,23 @@ for i in range (0,100000):
         # plt.plot([1,2,3,4,5],u[:,4])
         # plt.plot([1,2,3,4,5],u[:,0])
         # plt.show()
+=======
+        
+    if i%1 == 0: #2D projections
+        plt.plot(x, oTotal[0,:], label = 'total O')
+        plt.plot(x,o18[0,:], label = 'O18%')
+        plt.xlabel('concentration')
+        plt.axvline(x = 0, color = 'b')
+        plt.axvline(x = xmax, color = 'b')
+        plt.legend()
+        plt.show()
+    
+    if np.sum(u[:,len(oTotal[0,:])-1]) > 598: #Moving boundry
+        oTotal = np.c_[oTotal,np.zeros(len(oTotal[:,0]))]
+        xmax = xmax + dx
+        x = np.append(x,xmax)
+        D = np.c_[D,[1,0.01,0.01,0.01,0.01,0.01]]
+>>>>>>> Stashed changes
         
     
     if np.sum(u[:,len(u[0,:])-1]) > 400: #MOVING BOUNDRY
