@@ -45,7 +45,7 @@ def isotopeDiffusion(x, co, h, Do, L, fl, Omega, cop):
     uiMinus1 = np.copy(x)
     coPlus1 = np.copy(co)
     coMinus1 = np.copy(co)
-    metalBoundryTotal = np.sum(u[:,len(u[0,:])-1]) #addition of concentrations at metal boundry
+    metalBoundryTotal = np.sum(x[:,len(x[0,:])-1]) #addition of concentrations at metal boundry
     for i in range(len(x[:,0])):
         #uiPlus1[i,:] = np.append(x[i,1:],x[i,len(x[0,:])-1]) # THIS IS FOR NO DIFFUSION INTO METAL
         uiPlus1[i,:] = np.append(x[i,1:],metalBoundryTotal/len(x[:,0])) #this boundry condiditon is eq. 23 (unweighted average atm)
@@ -58,7 +58,7 @@ def isotopeDiffusion(x, co, h, Do, L, fl, Omega, cop):
     - ((1/cop))*(np.multiply(Do,(uiPlus1 - uiMinus1) / 2*h))
     - ((3*fl)/(Omega*L))*np.devide((np.multiply(Do,(uiPlus1 - uiMinus1) / 2*h)),co)
 
-def mirrorIsoptopeDiffusion(x, co, h, Do, L, fl, Omega, cop):
+def mirrorIsotopeDiffusion(x, co, h, Do, L, fl, Omega, cop):
     uiPlus1 = np.copy(x)
     uiMinus1 = np.copy(x)
     coPlus1 = np.copy(co)
@@ -105,6 +105,13 @@ def isotopeRK4(x, co, h, Do, L, fl, Omega, cop, dt):
     fd = isotopeDiffusion(x + fc*dt, co, h, Do, L, fl, Omega, cop)
     return 1/6 *(fa + 2*fb + 2*fc + fd) * dt
 
+def mirrorIsotopeRK4(x, co, h, Do, L, fl, Omega, cop, dt):
+    fa = mirrorIsotopeDiffusion(x, co, h, Do, L, fl, Omega, cop)
+    fb = mirrorIsotopeDiffusion(x + fa*dt/2, co, h, Do, L, fl, Omega, cop)
+    fc = mirrorIsotopeDiffusion(x + fb*dt/2, co, h, Do, L, fl, Omega, cop)
+    fd = mirrorIsotopeDiffusion(x + fc*dt, co, h, Do, L, fl, Omega, cop)
+    return 1/6 *(fa + 2*fb + 2*fc + fd) * dt
+
 #EULER METHODS
 
 def euler(yn, stepsize, t, h):
@@ -131,7 +138,7 @@ def initial_left(x): #unsaturated oxygen
 def initalOxygen(x):
     stemp = (int((ymax-ymin)/dx)+1,int((xmax-xmin)/dx)+1)
     y = np.ones(stemp)
-    return(y*99)
+    return(y*100)
 
 #Setting step size
 
@@ -199,9 +206,9 @@ plt.show()
     
 
 #%%This loop is for 3D
-for i in range (0,10000):
-    oTotal = oTotal + RK4(oTotal, dt, dx, D)
-    o18 = o18 + isotopeRK4(o18, oTotal, dx, D, L, fl, Omega, cop, dt)
+for i in range (0,100000):
+    oTotal = oTotal + RK4(oTotal, dt, dx, D) + mirrorRK4(oTotal, dt, dx, D)
+    o18 = o18 + isotopeRK4(o18, oTotal, dx, D, L, fl, Omega, cop, dt) + mirrorIsotopeRK4(o18, oTotal, dx, D, L, fl, Omega, cop, dt)
     oTotal[:,0] = 100
     o18[:,0] = 100
     
@@ -215,17 +222,20 @@ for i in range (0,10000):
     #     ax.set_title('t='+ str(i))
     #     plt.show()
         
-    if i%20 == 0: #2D projections
-        plt.plot(x, oTotal[0,:], label = 'Total O')
-        plt.plot(x,o18[4,:], label = 'O18%')
+    if i%200 == 0: #2D projections
+        plt.plot(x, oTotal[0,:], label = 'Total O gb')
+        plt.plot(x,o18[0,:], label = 'O18% gb')
+        plt.plot(x,o18[4,:], label = 'O18% bulk')
         plt.xlabel('concentration')
         plt.axvline(x = 0, color = 'b')
         plt.axvline(x = xmax, color = 'b')
+        plt.ylim(0,105)
         plt.legend()
         plt.show()
     
-    if np.sum(u[:,len(oTotal[0,:])-1]) > 30: #Moving boundry
-        oTotal = np.c_[oTotal,np.zeros(len(oTotal[:,0]))]
+    if np.sum(oTotal[:,len(oTotal[0,:])-1]) > 600-10e-4: #Moving boundry
+        oTotal = np.c_[oTotal,100-10e-4*np.ones(len(oTotal[:,0]))]
+        o18 = np.c_[o18,o18[:,(len(o18[:,0]))]]
         xmax = xmax + dx
         x = np.append(x,xmax)
         D = np.c_[D,[1,0.01,0.01,0.01,0.01,0.01]]
