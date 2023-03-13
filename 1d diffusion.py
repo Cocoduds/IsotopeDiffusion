@@ -54,7 +54,7 @@ def isotopeDiffusion(x, co, h, Do, L, fl, Omega, cop):
         coMinus1[i,:] = np.append(1,co[i,:-1])
 
     return (np.multiply(Do,(uiPlus1 + -2*x + uiMinus1) / h**2)) \
-    - ((1/cop)*np.multiply(co,(np.multiply(Do,(uiPlus1 + -2*x + uiMinus1) / h**2))))\
+    - ((1/cop)*np.multiply(co,(np.multiply(Do,(uiPlus1 + -2*x + uiMinus1) / h**2)))) \
     - ((1/cop))*(np.multiply(Do,(uiPlus1 - uiMinus1) / 2*h))\
     - ((3*fl)/(Omega*L))*np.divide((np.multiply(Do,(uiPlus1 - uiMinus1) / 2*h)),co)
 
@@ -69,10 +69,10 @@ def mirrorIsotopeDiffusion(x, co, h, Do, L, fl, Omega, cop):
         coPlus1[:,i] = np.append(co[1:,i],co[len(co[:,0])-1,i])
         coMinus1[:,i] = np.append(co[0,i],co[:-1,i])
 
-    return (np.multiply(Do,(uiPlus1 + -2*x + uiMinus1) / h**2)) \
-    - ((1/cop)*np.multiply(co,(np.multiply(Do,(uiPlus1 + -2*x + uiMinus1) / h**2)))) \
-    - ((1/cop))*(np.multiply(Do,(uiPlus1 - uiMinus1) / 2*h)) \
-    - ((3*fl)/(Omega*L))*np.divide((np.multiply(Do,(uiPlus1 - uiMinus1) / 2*h)),co)
+    return (np.multiply(Do,(uiPlus1 + -2*x + uiMinus1) / h**2)) 
+    - ((1/cop)*np.multiply(co,(np.multiply(Do,(uiPlus1 + -2*x + uiMinus1) / h**2))))
+    - ((1/cop))*(np.multiply(Do,(uiPlus1 - uiMinus1) / 2*h))
+    - ((3*fl)/(Omega*L))*np.devide((np.multiply(Do,(uiPlus1 - uiMinus1) / 2*h)),co)
 
 
 #%% RUNGE KUTTA METHODS
@@ -152,9 +152,9 @@ def initalOxygen(x):
 dx=0.1 #SPATIAL STEP SIZE
 dy=0.1 #the program runs on a square grid everything is set to dh. this will need to be changed to change the step size in grain boundry
 xmin=0 
-xmax=0.5 #INITIAL RANGE BETWEEN OXYGEN AND ALLUMINIUM
+xmax=1 #INITIAL RANGE BETWEEN OXYGEN AND ALLUMINIUM
 ymin=0
-ymax=0.2 #DISTANCE IN BULK DIRECTION
+ymax=0 #DISTANCE IN BULK DIRECTION
 dt=0.001 #TEMPORAL STEP SIZE
 
 cop=1
@@ -185,7 +185,7 @@ plt.plot(x,u[0,:])
 print('y=', u[0,:])
 plt.show()
 
-tracer = []
+
 #%% THIS LOOP IS FOR 1D only
 # for i in range (0, 20000000):
 #     u = RK4(u, dt, dx, D, 1)
@@ -211,11 +211,13 @@ tracer = []
 #     #     xmax = xmax + dx
 #     #     x = np.append(x,xmax+dx)
     
+#%%Keeping track of tracer in new nodes
+tracer = []
 
 #%%This loop is for 3D
-for i in range (0,10000000):
-    oTotal = oTotal + euler(oTotal, dt, dx, D) + mirroreuler(oTotal, dt, dx, D)
-    o18 = o18 + isotopeeuler(o18, oTotal, dx, D, L, fl, Omega, cop, dt) + mirrorIsotopeeuler(o18, oTotal, dx, D, L, fl, Omega, cop, dt)
+for i in range (0,100000):
+    oTotal = oTotal + euler(oTotal, dt, dx, D)
+    o18 = o18 + isotopeeuler(o18, oTotal, dx, D, L, fl, Omega, cop, dt)
     oTotal[:,0] = 1
     o18[:,0] = 1
     
@@ -229,23 +231,9 @@ for i in range (0,10000000):
     #     ax.set_title('t='+ str(i))
     #     plt.show()
         
-    if i%200000 == 0: #2D projections
-        plt.plot(x, oTotal[0,:], label = 'Total O gb')
-        print(oTotal[0,:])
-        plt.plot(x,o18[0,:], label = 'O18% gb')
-        plt.plot(x,o18[2,:], label = 'O18% bulk')
-        plt.xlabel('concentration')
-        plt.axvline(x = 0, color = 'b')
-        plt.axvline(x = xmax, color = 'b')
-        # plt.ylim(0,1.05)
-        plt.legend()
-        plt.show()
-    
-    if np.sum(oTotal[:,len(oTotal[0,:])-1]) > 3-(3*10e-2): #Moving boundry
-    
+    if i%10000 == 0: #2D projections
         plt.plot(x, oTotal[0,:], label = 'Total O gb')
         plt.plot(x,o18[0,:], label = 'O18% gb')
-        plt.plot(x,o18[2,:], label = 'O18% bulk')
         plt.xlabel('concentration')
         plt.axvline(x = 0, color = 'b')
         plt.axvline(x = xmax, color = 'b')
@@ -253,14 +241,25 @@ for i in range (0,10000000):
         plt.legend()
         plt.show()
     
-        oTotal = np.c_[oTotal,(100-10e-4)*np.zeros(len(oTotal[:,0]))]
+    if np.sum(oTotal[:,len(oTotal[0,:])-1]) > 1-(4*10e-4): #Moving boundry
+    
+        plt.plot(x, oTotal[0,:], label = 'Total O gb')
+        plt.plot(x,o18[0,:], label = 'O18% gb')
+        plt.xlabel('concentration')
+        plt.axvline(x = 0, color = 'b')
+        plt.axvline(x = xmax, color = 'b')
+        plt.ylim(0,1.05)
+        plt.legend()
+        plt.show()
+    
+        oTotal = np.c_[oTotal,(1-10e-4)*np.zeros(len(oTotal[:,0]))]
         o18 = np.c_[o18,o18[:,(len(o18[:,0]))]]
         xmax = xmax + dx
         x = np.append(x,xmax)
-        D = np.c_[D,[1,0.001,0.001]]
+        D = np.c_[D,[1]]
         
-        print('O18 Concentration is: ', o18[0, (len(o18)-1,)], ' at GB and' , o18[2, (len(o18)-1,)], ' in bulk')
-        tracer.append(o18[0, (len(o18)-1,)])
+        print('O18 Concentration is: ', o18[0,-1], ' at GB ')
+        tracer.append(o18[0,-1])
         
         
 #%%
