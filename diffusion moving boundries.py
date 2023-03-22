@@ -105,6 +105,7 @@ for i in range (1,int((ymax-ymin)/h)):
 u = initial_left(x)
 #v = initial_right(x)
 
+tracer=[]
 
 print('x=',x)
 plt.figure(1)
@@ -171,12 +172,46 @@ for i in range (0,100000):
         # plt.plot([1,2,3,4,5],u[:,0])
         # plt.show()
         
-    
-    if np.sum(u[:,len(u[0,:])-1]) > 400: #MOVING BOUNDRY
-        u = np.c_[u,np.zeros(len(u[:,0]))]
-        xmax = xmax + h #the added step could vary graphically from initial step
-        x = np.append(x,xmax)
-        D = np.c_[D,[1,0.01,0.01,0.01,0.01]] #THIS IS STILL HARDCODED
-        print(u)
 
+    # if i%200000 == 0: #2D projections
+        # plt.close()
+        # plt.plot(x, oTotal[0,:], label = 'Total O gb')
+        # print(oTotal[0,:])
+        # plt.plot(x,o18[0,:], label = 'O18% gb')
+        # plt.plot(x,o18[2,:], label = 'O18% bulk')
+        # plt.xlabel('concentration')
+        # plt.axvline(x = 0, color = 'b')
+        # plt.axvline(x = xmax, color = 'b')
+        # # plt.ylim(0,1.05)
+        # plt.legend()
+        # plt.show()
+    
+    if np.sum(oTotal[:,len(oTotal[0,:])-1]) > 3-(3*10e-2): #Moving boundry
+        # plt.close()
+        # plt.plot(x, oTotal[0,:], label = 'Total O gb')
+        # plt.plot(x,o18[0,:], label = 'O18% gb')
+        # plt.plot(x,o18[2,:], label = 'O18% bulk')
+        # plt.xlabel('concentration')
+        # plt.axvline(x = 0, color = 'b')
+        # plt.axvline(x = xmax, color = 'b')
+        # plt.ylim(0,1.05)
+        # plt.legend()
+        # plt.show()
+    
+        oTotal = np.c_[oTotal,(100-10e-4)*np.zeros(len(oTotal[:,0]))]
+        o18 = np.c_[o18,o18[:,(len(o18[:,0]))]]
+        xmax = xmax + h
+        x = np.append(x,xmax)
+        D = np.c_[D,[1,0.001,0.001]]
         
+        print('O18 Concentration is: ', o18[0, (len(o18)-1,)], ' at GB and' , o18[2, (len(o18)-1,)], ' in bulk')
+        tracer.append(o18[0, (len(o18)-1,)])
+        
+        
+#%%
+plt.close()
+plt.plot(np.linspace(0,len(tracer), len(tracer)), tracer)
+plt.ylabel('concentration of O18')
+plt.xlabel('node #')
+plt.title('concentration of tracer in new nodes')
+plt.savefig('2d.png')
